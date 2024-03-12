@@ -21,4 +21,3 @@ The ***crawled_train_data.txt*** file is used for annotation and training phase,
 while the ***crawled_test_data.txt*** file is used to perform new unseen pages on NER model. When creating new data for testing the model,
 it is important to set the `training_data` boolean to ``False``. If `training_data` is set to ``True``, then the model needs to be trained again.
 8. [Google Docs documentation](https://docs.google.com/document/d/1uQrA2weAnQ0KJe-A3IeMbnY54yZ-uBIgSt8anb8_YoY/edit?usp=sharing)
-        
