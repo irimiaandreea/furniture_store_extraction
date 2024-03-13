@@ -3,6 +3,9 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 import re
+import os
+from dotenv import load_dotenv
+load_dotenv(dotenv_path='../config/.env')
 
 
 class CustomError(Exception):
@@ -11,7 +14,7 @@ class CustomError(Exception):
         super().__init__(self.message)
 
 
-def process_input_data(input_file, start_valid_url, limit, training_data):
+def process_input_data(input_csv_file, start_valid_url, limit, training_data):
     count_current_page = 0
     if training_data:
         output_file = "crawled_train_data.txt"
@@ -20,7 +23,7 @@ def process_input_data(input_file, start_valid_url, limit, training_data):
 
     with open(output_file, "w") as output_file:
         # read the input_csv_file line by line
-        with open(input_file, "r") as input_file:
+        with open(input_csv_file, "r") as input_file:
             csv_reader = csv.reader(input_file, delimiter="\t")
 
             # skip the header
@@ -86,8 +89,9 @@ def crawl_data_from_page(current_url, count_successful_pages):
 
 
 if __name__ == '__main__':
-    input_file = "../../datasets/furniture_stores_pages.csv"
-    start_valid_url = 100
-    limit = 100
-    training_data = False
-    process_input_data(input_file, start_valid_url, limit, training_data)
+    input_csv_file = os.getenv('INPUT_CSV_FILE')
+    start_valid_url = int(os.getenv('START_VALID_URL'))
+    limit = int(os.getenv('LIMIT'))
+    training_data = os.getenv('TRAINING_DATA').lower() in ['true', '1']
+
+    process_input_data(input_csv_file, start_valid_url, limit, training_data)
