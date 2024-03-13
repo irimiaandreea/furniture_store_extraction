@@ -91,20 +91,17 @@ def tokenize_and_align_labels(batch_of_sequences):
     return tokenized_inputs
 
 
-def train_and_evaluate_model(train_dataset, eval_dataset, num_labels):
-    bert = BertForTokenClassification.from_pretrained("bert-base-uncased", num_labels=num_labels)
+def train_and_evaluate_model(train_dataset, eval_dataset):
+    bert = BertForTokenClassification.from_pretrained("bert-base-uncased", num_labels=len(unique_label_list))
     training_args = TrainingArguments(  # hyperparameters
         output_dir=ner_trained_model_dir,
         evaluation_strategy="epoch",
         logging_dir=None,
         report_to=["none"],
-        # eval_steps=500,
-        # save_steps=500,
         num_train_epochs=5,
         per_device_train_batch_size=8,
         per_device_eval_batch_size=8,
         learning_rate=5e-5,
-        # load_best_model_at_end=True,
         save_strategy="epoch",
         warmup_ratio=0.1,
     )
@@ -139,22 +136,20 @@ def train_and_evaluate_model(train_dataset, eval_dataset, num_labels):
     testing_results = trainer.evaluate(test_dataset)
     trainer.save_model(ner_trained_model_dir)
     tokenizer.save_pretrained(ner_trained_tokenizer_dir)
-    print("Testing results:", testing_results)
 
 
-def load_data(input_file):
+def process_data(input_file):
     conll_input_dataset = Dataset.from_dict(read_conll2003_input_file(input_file))
-    print("conll_input_dataset ", conll_input_dataset)
-
     tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
     unique_label_list = set()
-    for example in conll_input_dataset:
-        unique_label_list.update(example["ner_tags"])
+
+    for sentence in conll_input_dataset:
+        unique_label_list.update(sentence["ner_tags"])
 
     unique_label_list = sorted(unique_label_list)
     label_map = {label: i for i, label in enumerate(unique_label_list)}
-    num_labels = len(unique_label_list)
-    return conll_input_dataset, label_map, tokenizer, num_labels, unique_label_list
+
+    return conll_input_dataset, label_map, tokenizer, unique_label_list
 
 
 if __name__ == "__main__":
@@ -164,7 +159,7 @@ if __name__ == "__main__":
 
     clean_up_directories(ner_trained_model_dir, ner_trained_tokenizer_dir)
 
-    conll_input_dataset, label_map, tokenizer, num_labels, unique_label_list = load_data(input_file)
+    conll_input_dataset, label_map, tokenizer, unique_label_list = process_data(input_file)
     tokenized_dataset = conll_input_dataset.map(tokenize_and_align_labels, batched=True)
 
     # the tokenized_conll_input_dataset will be split into 80% train, 20% (10% test + 10% validation) datasets
@@ -175,4 +170,4 @@ if __name__ == "__main__":
     test_dataset = test_eval_dataset_dict['test']
     eval_dataset = test_eval_dataset_dict['train']
 
-    train_and_evaluate_model(train_dataset, eval_dataset, num_labels)
+    train_and_evaluate_model(train_dataset, eval_dataset)
