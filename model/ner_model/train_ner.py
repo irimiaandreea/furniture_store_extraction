@@ -4,9 +4,6 @@ from datasets import Dataset, load_metric
 import numpy as np
 import torch
 from transformers import BertTokenizerFast, BertForTokenClassification, Trainer, TrainingArguments
-from dotenv import load_dotenv
-
-load_dotenv(dotenv_path='../config/.env')
 
 
 def clean_up_directories(*directories):
@@ -156,13 +153,13 @@ def process_data(input_file):
 
 
 if __name__ == "__main__":
-    ner_trained_model_dir = os.getenv('NER_TRAINED_MODEL_DIR')
-    ner_trained_tokenizer_dir = os.getenv('NER_TRAINED_TOKENIZER_DIR')
-    input_train_file = os.getenv('INPUT_TRAIN_FILE')
+    ner_trained_model_dir = "output_ner_model"
+    ner_trained_tokenizer_dir = "output_ner_tokenizer"
+    input_file = "../../datasets/input_dataset_100.conll"
 
     clean_up_directories(ner_trained_model_dir, ner_trained_tokenizer_dir)
 
-    conll_input_dataset, label_map, tokenizer, unique_label_list = process_data(input_train_file)
+    conll_input_dataset, label_map, tokenizer, unique_label_list = process_data(input_file)
     tokenized_dataset = conll_input_dataset.map(tokenize_and_align_labels, batched=True)
 
     # the tokenized_conll_input_dataset will be split into 80% train, 20% (10% test + 10% validation) datasets
