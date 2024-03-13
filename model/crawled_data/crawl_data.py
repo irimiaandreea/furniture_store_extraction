@@ -1,6 +1,5 @@
 import csv
 import sys
-
 import requests
 from bs4 import BeautifulSoup
 import re
@@ -67,7 +66,7 @@ def crawl_data_from_page(current_url, count_successful_pages):
                                               "html.parser")  # page_response.text is the content of the response in Unicode, and page_response.content is the content of the response in bytes
                 crawled_data_response = ' '.join(
                     [element.get_text() for element in
-                     soup_response.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'])]) #include <span>, <a> togs
+                     soup_response.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'])])  # include <span>, <a> togs
 
                 if len(crawled_data_response) != 0:
                     # remove special characters, extra-spaces

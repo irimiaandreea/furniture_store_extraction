@@ -1,11 +1,6 @@
 from transformers import BertTokenizerFast, BertForTokenClassification
 from transformers import pipeline
 
-ner_trained_model_dir = "output_ner_model"
-ner_trained_tokenizer_dir = "output_ner_tokenizer"
-input_file = "../crawled_data/crawled_test_data.txt"
-output_file = "product_names.txt"
-
 
 def load_model_and_tokenizer(model_dir, tokenizer_dir):
     tokenizer = BertTokenizerFast.from_pretrained(tokenizer_dir)
@@ -29,6 +24,11 @@ def perform_ner(input_file, output_file, ner):
                         output_file.write(f"{entity_label}\t{ner_result['word']}\n")
 
 
-ner = load_model_and_tokenizer(ner_trained_model_dir, ner_trained_tokenizer_dir)
-perform_ner(input_file, output_file, ner)
-print("successfully stored ", output_file)
+if __name__ == "__main__":
+    ner_trained_model_dir = "output_ner_model"
+    ner_trained_tokenizer_dir = "output_ner_tokenizer"
+    input_file = "../crawled_data/crawled_test_data.txt"
+    output_file = "product_names.txt"
+
+    ner = load_model_and_tokenizer(ner_trained_model_dir, ner_trained_tokenizer_dir)
+    perform_ner(input_file, output_file, ner)
