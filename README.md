@@ -21,4 +21,4 @@ execute the `crawl_data.py` file with the desired input variables:
 The ***crawled_train_data.txt*** file is used for annotation and training phase, 
 while the ***crawled_test_data.txt*** file is used to perform new unseen pages on NER model. 
 When creating new data for testing the model, ensure that the `training_data` is set to `False`. Setting it to `True` indicates that the model needs to be trained again.
-7. For more information regarding the project and thought process, please visit this [Google Docs documentation](https://docs.google.com/document/d/1uQrA2weAnQ0KJe-A3IeMbnY54yZ-uBIgSt8anb8_YoY/edit?usp=sharing)
+7. For more information regarding the project and thought the process, please visit this [Google Docs documentation](https://docs.google.com/document/d/1uQrA2weAnQ0KJe-A3IeMbnY54yZ-uBIgSt8anb8_YoY/edit?usp=sharing).
