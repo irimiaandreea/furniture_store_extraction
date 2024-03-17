@@ -5,13 +5,11 @@ import numpy as np
 import torch
 from transformers import BertTokenizerFast, BertForTokenClassification, Trainer, TrainingArguments
 
-
 def clean_up_directories(*directories):
     for directory in directories:
         if os.path.exists(directory):
             shutil.rmtree(directory)
         os.makedirs(directory)
-
 
 class CustomDataCollator:
     def __init__(self, tokenizer):
@@ -71,7 +69,7 @@ def read_conll2003_input_file(input_file_path):
 
 def tokenize_and_align_labels(batch_of_sequences):
     tokenized_inputs = tokenizer(
-        batch_of_sequences["tokens"], truncation=True, is_split_into_words=True, padding=True
+        batch_of_sequences["tokens"], truncation=True, is_split_into_words=True, padding=True, return_tensors="pt"
     )
     labels = []
     for index, label in enumerate(batch_of_sequences["ner_tags"]):
@@ -92,7 +90,9 @@ def tokenize_and_align_labels(batch_of_sequences):
 
 
 def train_and_evaluate_model(train_dataset, eval_dataset):
-    bert = BertForTokenClassification.from_pretrained("bert-base-uncased", num_labels=len(unique_label_list))
+    bert = BertForTokenClassification.from_pretrained("bert-base-cased",
+                                                      num_labels=len(unique_label_list))
+
     training_args = TrainingArguments(  # hyperparameters
         output_dir=ner_trained_model_dir,
         evaluation_strategy="epoch",
@@ -140,7 +140,7 @@ def train_and_evaluate_model(train_dataset, eval_dataset):
 
 def process_data(input_file):
     conll_input_dataset = Dataset.from_dict(read_conll2003_input_file(input_file))
-    tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased")
     unique_label_list = set()
 
     for sentence in conll_input_dataset:
