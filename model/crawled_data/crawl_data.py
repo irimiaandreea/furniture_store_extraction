@@ -28,7 +28,7 @@ def process_input_data(input_file, start_valid_url, limit, training_data):
 
             count_successful_pages = 0
             for url in csv_reader:
-                crawled_data_response = crawl_data_from_page(url[0], count_current_page)
+                crawled_data_response = crawl_data_from_page(url[0])
                 if crawled_data_response is not None:
                     count_current_page += 1
 
@@ -51,7 +51,7 @@ def process_input_data(input_file, start_valid_url, limit, training_data):
         output_file.close()
 
 
-def crawl_data_from_page(current_url, count_successful_pages):
+def crawl_data_from_page(current_url):
     page_response = requests.Response()
 
     try:
@@ -74,10 +74,8 @@ def crawl_data_from_page(current_url, count_successful_pages):
                     crawled_data_response = crawled_data_response.lower().strip()
                     crawled_data_response = " ".join(crawled_data_response.split())
 
-                    print("Current page nr. ", count_successful_pages, current_url, " has been successfully crawled")
                     return crawled_data_response
 
-        print("Current page nr. ", count_successful_pages, current_url, " has been failed")
         return None
 
     except requests.exceptions.RequestException as exception:
