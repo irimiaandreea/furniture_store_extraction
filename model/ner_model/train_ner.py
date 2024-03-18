@@ -5,11 +5,13 @@ import numpy as np
 import torch
 from transformers import BertTokenizerFast, BertForTokenClassification, Trainer, TrainingArguments
 
+
 def clean_up_directories(*directories):
     for directory in directories:
         if os.path.exists(directory):
             shutil.rmtree(directory)
         os.makedirs(directory)
+
 
 class CustomDataCollator:
     def __init__(self, tokenizer):
@@ -20,20 +22,32 @@ class CustomDataCollator:
         attention_mask = [torch.tensor(item["attention_mask"]) for item in features]
         labels = [torch.tensor(item["labels"]) for item in features]
         token_type_ids = [torch.tensor(item["token_type_ids"]) for item in features]
-
         input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True,
                                                     padding_value=self.tokenizer.pad_token_id)
         attention_mask = torch.nn.utils.rnn.pad_sequence(attention_mask, batch_first=True, padding_value=0)
         labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=-100)
         token_type_ids = torch.nn.utils.rnn.pad_sequence(token_type_ids, batch_first=True,
                                                          padding_value=self.tokenizer.pad_token_type_id)
-
         return {
             "input_ids": input_ids,
             "attention_mask": attention_mask,
             "labels": labels,
             "token_type_ids": token_type_ids
         }
+
+
+def process_data(input_file):
+    conll_input_dataset = Dataset.from_dict(read_conll2003_input_file(input_file))
+    tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased")
+    unique_label_list = set()
+
+    for sentence in conll_input_dataset:
+        unique_label_list.update(sentence["ner_tags"])
+
+    unique_label_list = sorted(unique_label_list)
+    label_map = {label: i for i, label in enumerate(unique_label_list)}
+
+    return conll_input_dataset, label_map, tokenizer, unique_label_list
 
 
 # read the CoNLL2003 data from the file exported by Label Studio
@@ -69,21 +83,21 @@ def read_conll2003_input_file(input_file_path):
 
 def tokenize_and_align_labels(batch_of_sequences):
     tokenized_inputs = tokenizer(
-        batch_of_sequences["tokens"], truncation=True, is_split_into_words=True, padding=True, return_tensors="pt"
+        batch_of_sequences["tokens"], truncation=True, is_split_into_words=True, padding=True
     )
     labels = []
     for index, label in enumerate(batch_of_sequences["ner_tags"]):
         word_ids = tokenized_inputs.word_ids(batch_index=index)
         previous_word_idx = None
         label_ids = []
-        for word_idx in word_ids:
-            if word_idx is None:
+        for word_index in word_ids:
+            if word_index is None:
                 label_ids.append(-100)
-            elif word_idx != previous_word_idx:
-                label_ids.append(label_map.get(label[word_idx]))
+            elif word_index != previous_word_idx:
+                label_ids.append(label_map.get(label[word_index]))
             else:
                 label_ids.append(-100)
-            previous_word_idx = word_idx
+            previous_word_idx = word_index
         labels.append(label_ids)
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
@@ -111,11 +125,11 @@ def train_and_evaluate_model(train_dataset, eval_dataset):
     def compute_metrics(eval_preds):
         pred_logits, labels = eval_preds
         pred_logits = np.argmax(pred_logits, axis=2)
-        predictions = [[unique_label_list[eval_preds] for (eval_preds, l) in zip(prediction, label) if l != -100]
+        predicted_labels = [[unique_label_list[eval_preds] for (eval_preds, l) in zip(prediction, label) if l != -100]
                        for prediction, label in zip(pred_logits, labels)]
-        true_labels = [[unique_label_list[l] for (eval_preds, l) in zip(prediction, label) if l != -100]
+        actual_labels = [[unique_label_list[l] for (eval_preds, l) in zip(prediction, label) if l != -100]
                        for prediction, label in zip(pred_logits, labels)]
-        results = metric.compute(predictions=predictions, references=true_labels)
+        results = metric.compute(predictions=predicted_labels, references=actual_labels)
         return {
             "precision": results["overall_precision"],
             "recall": results["overall_recall"],
@@ -138,20 +152,6 @@ def train_and_evaluate_model(train_dataset, eval_dataset):
     tokenizer.save_pretrained(ner_trained_tokenizer_dir)
 
 
-def process_data(input_file):
-    conll_input_dataset = Dataset.from_dict(read_conll2003_input_file(input_file))
-    tokenizer = BertTokenizerFast.from_pretrained("bert-base-cased")
-    unique_label_list = set()
-
-    for sentence in conll_input_dataset:
-        unique_label_list.update(sentence["ner_tags"])
-
-    unique_label_list = sorted(unique_label_list)
-    label_map = {label: i for i, label in enumerate(unique_label_list)}
-
-    return conll_input_dataset, label_map, tokenizer, unique_label_list
-
-
 if __name__ == "__main__":
     ner_trained_model_dir = "output_ner_model"
     ner_trained_tokenizer_dir = "output_ner_tokenizer"
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     conll_input_dataset, label_map, tokenizer, unique_label_list = process_data(input_file)
     tokenized_dataset = conll_input_dataset.map(tokenize_and_align_labels, batched=True)
 
-    # the tokenized_conll_input_dataset will be split into 80% train, 20% (10% test + 10% validation) datasets
+    # the tokenized_dataset will be split into 80% train, 20% (10% test + 10% validation) datasets
     train_test_dataset_dict = tokenized_dataset.train_test_split(train_size=0.8, test_size=0.2)
     test_eval_dataset_dict = train_test_dataset_dict['test'].train_test_split(train_size=0.5, test_size=0.5)
 
